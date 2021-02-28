@@ -4,6 +4,12 @@ import { rg2cy } from '../../../../utils/cyHelpers'
 import { chain } from 'lodash'
 
 const { db } = require('../../../../utils/arangoWrapper')
+const updateMindMap = async (database, mindmapKey, name) => {
+  return database.query({
+    query: `UPDATE @mindmapKey WITH { name: @name } IN mindmaps`,
+    bindVars: { name, mindmapKey }
+  });
+}
 
 const MindMapAPI = async (req, res) => {
   const { token } = req.headers
@@ -82,8 +88,15 @@ const MindMapAPI = async (req, res) => {
 
           return res.status(200).json(result)
         }
-
-        return res.status(404).json({ message: 'Not Found.' })
+      case 'POST':
+        const { name } = req.body
+        if (!name || 0 === name.length) {
+          return res.status(400).json({"message": "name is required"})
+        }
+        await updateMindMap(db, key, name)
+        return res.status(200).json({"message": "updated"})
+      default:
+      return res.status(404).json({ message: 'Not Found.' })
     }
   }
   catch (error) {
